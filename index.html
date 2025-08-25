@@ -72,7 +72,6 @@
   .share { display:flex; gap:8px; margin-top:12px; }
   .linklike { background:#fff; color:#111; border:1px solid #ddd; }
   .fineprint { font-size:.85rem; color:#666; }
-  .footerlink { text-align:center; margin-top:8px; }
   a.ext { color:#111; }
 </style>
 </head>
@@ -212,10 +211,6 @@ function attachListeners(){
   });
 }
 
-document.getElementById('openExternal').addEventListener('click', (e)=>{
-  e.preventDefault();
-  window.open(window.location.href, '_blank');
-});
 
 renderForm();
 attachListeners();
@@ -229,4 +224,3 @@ submitBtn.addEventListener('click', ()=>{
 </script>
 </body>
 </html>
-
