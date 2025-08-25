@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>日本生活適性診断</title>
+<style>
+  :root { --w: 680px; --brand: #111; }
+  body { font-family: system-ui, -apple-system, "Noto Sans JP", sans-serif; margin: 0; background:#f7f7f8; color:#111; }
+  header { max-width:var(--w); margin: 0 auto; padding: 20px 16px; }
+  h1 { font-size: 1.4rem; margin: 8px 0 4px; }
+  p.desc { color:#444; margin:0 0 8px; }
+  main { max-width: var(--w); margin: 0 auto; padding: 8px 16px 88px; }
+  .card { background:#fff; border-radius:16px; box-shadow:0 2px 12px rgba(0,0,0,.06); padding:16px; margin:12px 0; }
+  .q { display:grid; gap:8px; }
+  .q h3 { font-size:1rem; margin:0; }
+  .scale { display:flex; gap:6px; justify-content:space-between; }
+  .scale label { flex:1; display:flex; align-items:center; justify-content:center; border:1px solid #ddd; border-radius:10px; padding:12px 8px; cursor:pointer; user-select:none; min-height:44px; }
+  /* ← ここがポイント：display:noneをやめて視覚的に隠す */
+  .visually-hidden {
+    position:absolute !important;
+    width:1px; height:1px;
+    margin:-1px; padding:0; border:0;
+    clip:rect(0 0 0 0); clip-path: inset(50%);
+    overflow:hidden; white-space:nowrap;
+  }
+  .scale input:checked + span { background:#111; color:#fff; border-color:#111; }
+  .actions { position:sticky; bottom:0; left:0; right:0; background:linear-gradient(180deg, rgba(247,247,248,0), #f7f7f8 40%, #f7f7f8); padding:16px; }
+  button { width:100%; padding:14px 16px; border-radius:12px; border:none; background:#111; color:#fff; font-size:1.05rem; font-weight:700; }
+  button:disabled { opacity:.5; }
+  .result { text-align:center; }
+  .score { font-size:2.2rem; margin:8px 0; }
+  .badge { display:inline-block; padding:6px 10px; border-radius:999px; font-weight:700; }
+  .hi { background:#16a34a22; color:#166534; border:1px solid #16a34a55; }
+  .mid { background:#f59e0b22; color:#92400e; border:1px solid #f59e0b55; }
+  .lo { background:#ef444422; color:#991b1b; border:1px solid #ef444455; }
+  .tips { text-align:left; margin-top:12px; }
+  .share { display:flex; gap:8px; margin-top:12px; }
+  .linklike { background:#fff; color:#111; border:1px solid #ddd; }
+  .fineprint { font-size:.85rem; color:#666; }
+  .footerlink { text-align:center; margin-top:8px; }
+  a.ext { color:#111; }
+</style>
+</head>
+<body>
+  <header>
+    <h1>日本生活適性診断</h1>
+    <p class="desc">10問・約1分。自分に当てはまる度合いを選んでください（1=全く当てはまらない〜5=とても当てはまる）。</p>
+  </header>
+
+  <main id="app"></main>
+
+  <div class="actions">
+    <button id="submitBtn" disabled>診断する</button>
+    <div class="footerlink">
+      <a class="ext" href="#" id="openExternal">外部ブラウザで開く</a>
+    </div>
+  </div>
+
+<script>
+const QUESTIONS = [
+  { id:'q1',  text:'日本語の学習や練習を継続する意欲がある' },
+  { id:'q2',  text:'文化や価値観の違いを楽しめる' },
+  { id:'q3',  text:'公共のルールやマナーを守ることに抵抗がない' },
+  { id:'q4',  text:'公共交通（電車・バス）を活用できる' },
+  { id:'q5',  text:'仕事/学習のスケジュール管理が得意' },
+  { id:'q6',  text:'生活費の管理（家計・貯蓄）ができる' },
+  { id:'q7',  text:'丁寧なコミュニケーションを心がけている' },
+  { id:'q8',  text:'住環境（騒音・ゴミ分別など）に配慮できる' },
+  { id:'q9',  text:'食事・睡眠など健康管理を意識している' },
+  { id:'q10', text:'困ったら行政/学校/職場/友人に相談できる' },
+];
+
+const app = document.getElementById('app');
+const submitBtn = document.getElementById('submitBtn');
+
+function renderForm() {
+  app.innerHTML = '';
+  QUESTIONS.forEach((q, idx) => {
+    // ラジオにユニークIDを振って、labelのforで紐付ける
+    const options = [1,2,3,4,5].map(v => {
+      const rid = `${q.id}_${v}`;
+      return `
+        <label for="${rid}">
+          <input class="visually-hidden" id="${rid}" type="radio" name="${q.id}" value="${v}">
+          <span>${v}</span>
+        </label>
+      `;
+    }).join('');
+
+    const card = document.createElement('section');
+    card.className = 'card q';
+    card.innerHTML = `
+      <h3>${idx+1}. ${q.text}</h3>
+      <div class="scale" role="radiogroup" aria-label="${q.text}">
+        ${options}
+      </div>
+    `;
+    app.appendChild(card);
+  });
+  app.appendChild(document.createElement('div')).className = 'space';
+}
+
+function getAnswers() {
+  return QUESTIONS.map(q => {
+    const el = document.querySelector(`input[name="${q.id}"]:checked`);
+    return el ? Number(el.value) : null;
+  });
+}
+
+function validate() {
+  const a = getAnswers();
+  const ok = a.every(v => v !== null);
+  submitBtn.disabled = !ok;
+}
+
+function calcScore(values) {
+  const shiftedSum = values.reduce((s,v)=> s + (v-1), 0); // 0..40
+  const score = Math.round((shiftedSum / 40) * 100);     // 0..100
+  return score;
+}
+
+function scoreBand(score){
+  if(score >= 70) return { tag:'高', cls:'hi', advice:[
+    'この調子で生活習慣と言語環境を少しずつ強化すると◎',
+    '地域ルール（ゴミ分別/騒音）とマナーを継続意識',
+    '公式窓口・相談先をブックマークしておくと安心'
+  ]};
+  if(score >= 40) return { tag:'中', cls:'mid', advice:[
+    '得意な点は維持しつつ、弱い項目を1つだけ重点改善',
+    '週1回の日本語練習と家計確認のルーチン化が効果的',
+    '困ったときに頼れる人/窓口を事前にメモ'
+  ]};
+  return { tag:'低', cls:'lo', advice:[
+    'まずは生活リズム（睡眠/食事）と家計の見える化から',
+    '1日5分の日本語練習と相談先づくりを同時に開始',
+    '地域ルール（ゴミ/騒音）を自治体サイトで確認'
+  ]};
+}
+
+function renderResult(score){
+  const band = scoreBand(score);
+  app.innerHTML = `
+    <section class="card result">
+      <div class="badge ${band.cls}">適性：${band.tag}</div>
+      <div class="score">${score} / 100</div>
+      <p class="fineprint">（10問×5段階をスコア化）</p>
+      <div class="tips card">
+        <h3>ワンポイントアドバイス</h3>
+        <ul>${band.advice.map(t => `<li>${t}</li>`).join('')}</ul>
+      </div>
+      <div class="share">
+        <button id="copyBtn" class="linklike">結果をコピー</button>
+        <button id="retryBtn" class="linklike">もう一度</button>
+      </div>
+    </section>
+  `;
+
+  document.getElementById('copyBtn').onclick = async () => {
+    const text = `日本生活適性診断：${score}/100（${band.tag}）`;
+    try { await navigator.clipboard.writeText(text); alert('結果をコピーしました'); }
+    catch(e){ prompt('コピーできない場合は手動で選択→コピーしてください', text); }
+  };
+
+  document.getElementById('retryBtn').onclick = () => {
+    renderForm(); attachListeners();
+  };
+}
+
+function attachListeners(){
+  document.querySelectorAll('input[type="radio"]').forEach(i=>{
+    i.addEventListener('change', validate);
+  });
+}
+
+document.getElementById('openExternal').addEventListener('click', (e)=>{
+  e.preventDefault();
+  window.open(window.location.href, '_blank');
+});
+
+renderForm();
+attachListeners();
+
+submitBtn.addEventListener('click', ()=>{
+  const answers = getAnswers();
+  if(answers.some(v => v === null)) return;
+  const score = calcScore(answers);
+  renderResult(score);
+});
+</script>
+</body>
+</html>
