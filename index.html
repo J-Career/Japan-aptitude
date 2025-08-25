@@ -15,8 +15,25 @@
   .q { display:grid; gap:8px; }
   .q h3 { font-size:1rem; margin:0; }
   .scale { display:flex; gap:6px; justify-content:space-between; }
-  .scale label { flex:1; display:flex; align-items:center; justify-content:center; border:1px solid #ddd; border-radius:10px; padding:12px 8px; cursor:pointer; user-select:none; min-height:44px; }
-  /* ← ここがポイント：display:noneをやめて視覚的に隠す */
+  /* ここから*/
+.scale label {
+  flex: 1;
+  cursor: pointer;
+  user-select: none;
+  display: block; }
+.scale label span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 8px;
+  min-height: 44px;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  transition: background .15s ease, border-color .15s ease, color .15s ease;
+}
+
+/* ここ*/
+
   .visually-hidden {
     position:absolute !important;
     width:1px; height:1px;
@@ -24,7 +41,24 @@
     clip:rect(0 0 0 0); clip-path: inset(50%);
     overflow:hidden; white-space:nowrap;
   }
-  .scale input:checked + span { background:#111; color:#fff; border-color:#111; }
+ .scale input:checked + span {
+  background: #FFB347;
+  color: #111;
+  border-color: #FFB347;
+}
+
+
+/* お好みで：タップ中のワンテンポの見た目 */
+.scale label:active span {
+  background: #FFB347;
+  border-color: #FFB347;
+}
+
+/* お好みで：キーボード操作時のフォーカス可視化 */
+.scale input:focus + span {
+  outline: 2px solid #FFB347;
+  outline-offset: 2px;
+}
   .actions { position:sticky; bottom:0; left:0; right:0; background:linear-gradient(180deg, rgba(247,247,248,0), #f7f7f8 40%, #f7f7f8); padding:16px; }
   button { width:100%; padding:14px 16px; border-radius:12px; border:none; background:#111; color:#fff; font-size:1.05rem; font-weight:700; }
   button:disabled { opacity:.5; }
@@ -45,7 +79,7 @@
 <body>
   <header>
     <h1>日本生活適性診断</h1>
-    <p class="desc">10問・約1分。自分に当てはまる度合いを選んでください（1=全く当てはまらない〜5=とても当てはまる）。</p>
+    <p class="desc">20問・約2分。</br>1=全く当てはまらない 〜5=とても当てはまる。</p>
   </header>
 
   <main id="app"></main>
@@ -59,16 +93,26 @@
 
 <script>
 const QUESTIONS = [
-  { id:'q1',  text:'日本語の学習や練習を継続する意欲がある' },
-  { id:'q2',  text:'文化や価値観の違いを楽しめる' },
-  { id:'q3',  text:'公共のルールやマナーを守ることに抵抗がない' },
-  { id:'q4',  text:'公共交通（電車・バス）を活用できる' },
-  { id:'q5',  text:'仕事/学習のスケジュール管理が得意' },
-  { id:'q6',  text:'生活費の管理（家計・貯蓄）ができる' },
-  { id:'q7',  text:'丁寧なコミュニケーションを心がけている' },
-  { id:'q8',  text:'住環境（騒音・ゴミ分別など）に配慮できる' },
-  { id:'q9',  text:'食事・睡眠など健康管理を意識している' },
-  { id:'q10', text:'困ったら行政/学校/職場/友人に相談できる' },
+  { id:'q1',  text:'一人でも楽しく過ごしている方だ。' },
+  { id:'q2',  text:'慣れない環境に適応するのにストレスを感じない' },
+  { id:'q3',  text:'指示や規則に従うことに抵抗感がない' },
+  { id:'q4',  text:'雰囲気や相手の気分をよく気にする方だ' },
+  { id:'q5',  text:'喧嘩するより穏便に済ませたい' },
+  { id:'q6',  text:'自分と違う部分も尊重しようと努力できる' },
+  { id:'q7',  text:'韓国よりも遅い行政/サービスに耐える自信がある' },
+  { id:'q8',  text:'団体活動で協力して物事を進めることができる' },
+  { id:'q9',  text:'日本語をよく知らなくても学びたい意思がある' },
+  { id:'q10', text:'ラーメンが好き' },
+  { id:'q11', text:'時間厳守（約束や締切）を意識して行動できる' },
+  { id:'q12', text:'書類の手続き（役所/学校/銀行）に取り組める' },
+  { id:'q13', text:'混雑時でも落ち着いて行動できる' },
+  { id:'q14', text:'頑張れる' },
+  { id:'q15', text:'周囲に配慮した音量や行動を心がけている' },
+  { id:'q16', text:'天気や季節に合わせた生活準備（服装/防災）ができる' },
+  { id:'q17', text:'支援情報（自治体サイト等）を自分で探せる' },
+  { id:'q18', text:'礼儀正しい言葉づかいを意識できる' },
+  { id:'q19', text:'職場や学校での役割やルールを理解し守れる' },
+  { id:'q20', text:'新しい習慣を少しずつ取り入れるのが得意' },
 ];
 
 const app = document.getElementById('app');
@@ -77,7 +121,6 @@ const submitBtn = document.getElementById('submitBtn');
 function renderForm() {
   app.innerHTML = '';
   QUESTIONS.forEach((q, idx) => {
-    // ラジオにユニークIDを振って、labelのforで紐付ける
     const options = [1,2,3,4,5].map(v => {
       const rid = `${q.id}_${v}`;
       return `
@@ -114,27 +157,26 @@ function validate() {
   submitBtn.disabled = !ok;
 }
 
+
 function calcScore(values) {
-  const shiftedSum = values.reduce((s,v)=> s + (v-1), 0); // 0..40
-  const score = Math.round((shiftedSum / 40) * 100);     // 0..100
-  return score;
+  return values.reduce((s,v)=> s + v, 0);
 }
 
 function scoreBand(score){
-  if(score >= 70) return { tag:'高', cls:'hi', advice:[
-    'この調子で生活習慣と言語環境を少しずつ強化すると◎',
-    '地域ルール（ゴミ分別/騒音）とマナーを継続意識',
-    '公式窓口・相談先をブックマークしておくと安心'
+  if(score >= 80) return { tag:'高', cls:'hi', advice:[
+    '超適正あるよ',
+    'ううううう',
+    'あいうえお'
   ]};
-  if(score >= 40) return { tag:'中', cls:'mid', advice:[
-    '得意な点は維持しつつ、弱い項目を1つだけ重点改善',
-    '週1回の日本語練習と家計確認のルーチン化が効果的',
-    '困ったときに頼れる人/窓口を事前にメモ'
+  if(score >= 50) return { tag:'中', cls:'mid', advice:[
+    '適正まあまああるよ',
+    'らららら',
+    'あああああ'
   ]};
   return { tag:'低', cls:'lo', advice:[
-    'まずは生活リズム（睡眠/食事）と家計の見える化から',
-    '1日5分の日本語練習と相談先づくりを同時に開始',
-    '地域ルール（ゴミ/騒音）を自治体サイトで確認'
+    '適正ないわ',
+    'うふふふ',
+    'ほほほほ'
   ]};
 }
 
@@ -144,7 +186,7 @@ function renderResult(score){
     <section class="card result">
       <div class="badge ${band.cls}">適性：${band.tag}</div>
       <div class="score">${score} / 100</div>
-      <p class="fineprint">（10問×5段階をスコア化）</p>
+      <p class="fineprint">（20問×1〜5点の合計＝20〜100点）</p>
       <div class="tips card">
         <h3>ワンポイントアドバイス</h3>
         <ul>${band.advice.map(t => `<li>${t}</li>`).join('')}</ul>
